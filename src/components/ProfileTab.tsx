@@ -12,22 +12,51 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onUpdateUser,
   onOpenAIAdvisor,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone);
-  const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const [isEditingStyling, setIsEditingStyling] = useState(false);
+  const [hairProfile, setHairProfile] = useState(user.hairProfile || 'Wavy / Medium Length');
+  const [skinConcern, setSkinConcern] = useState(user.skinConcern || 'Hydration & De-Tan');
+  const [favoriteStylist, setFavoriteStylist] = useState(user.favoriteStylist || 'Aarav (Scissors & Shears)');
+  const [defaultLocality, setDefaultLocality] = useState(user.defaultLocality || 'Mansarovar, Jaipur');
+
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('Profile preferences updated successfully!');
+
+  const handleSavePersonal = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateUser({
       ...user,
       name,
       phone,
     });
-    setIsEditing(false);
+    setIsEditingPersonal(false);
+    setSuccessMsg('Personal information updated successfully!');
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2000);
+    setTimeout(() => setSavedSuccess(false), 2500);
   };
+
+  const handleSaveStyling = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateUser({
+      ...user,
+      hairProfile,
+      skinConcern,
+      favoriteStylist,
+      defaultLocality,
+    });
+    setIsEditingStyling(false);
+    setSuccessMsg('Beauty & Styling Profile updated successfully!');
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  const hairOptions = ['Wavy / Medium Length', 'Straight / Short', 'Curly / Long', 'Fade & Textured', 'Fine / Layered'];
+  const skinOptions = ['Hydration & De-Tan', 'Acne & Oil Control', 'Glow & Anti-Aging', 'Sensitive & Calm', 'Brightening'];
+  const stylistOptions = ['Aarav (Scissors & Shears)', 'Priya (Luxe Lounge)', 'Rohan (Hair Craft Studio)', 'Ananya (Glam Studio)'];
+  const localityOptions = ['Mansarovar, Jaipur', 'Vaishali Nagar, Jaipur', 'Malviya Nagar, Jaipur', 'C-Scheme, Jaipur', 'Raja Park, Jaipur'];
 
   return (
     <div className="flex flex-col w-full pb-28 max-w-4xl mx-auto px-page-margin pt-3">
@@ -64,49 +93,195 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       </div>
 
       {savedSuccess && (
-        <div className="p-3 mb-4 rounded-xl bg-success-emerald/15 text-success-emerald text-[13px] font-semibold flex items-center gap-2">
+        <div className="p-3 mb-4 rounded-xl bg-emerald-500/15 text-emerald-800 text-[13px] font-semibold flex items-center gap-2 border border-emerald-500/30">
           <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          <span>Profile preferences updated successfully!</span>
+          <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Styling Profile */}
+      {/* Beauty & Styling Profile */}
       <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4 shadow-xs mb-4">
         <div className="flex items-center justify-between mb-3 border-b border-outline-variant/40 pb-2">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-nexora-pink text-[20px]">palette</span>
             <h3 className="font-card-title text-[15px] font-bold text-on-surface">Beauty & Styling Profile</h3>
           </div>
-          <button
-            onClick={onOpenAIAdvisor}
-            className="text-[12px] font-bold text-nexora-pink hover:underline flex items-center gap-1"
-          >
-            <span>Consult AI</span>
-            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsEditingStyling(!isEditingStyling)}
+              className="text-[12px] font-bold text-[#b00055] hover:bg-[#b00055]/10 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 border border-[#b00055]/20 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {isEditingStyling ? 'close' : 'edit'}
+              </span>
+              <span>{isEditingStyling ? 'Cancel' : 'Edit Profile'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAIAdvisor}
+              className="text-[12px] font-bold text-nexora-pink hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Consult AI</span>
+              <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-[12px]">
-          <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-            <span className="text-on-surface-variant text-[11px] block">Hair Profile</span>
-            <span className="font-semibold text-on-surface">Wavy / Medium Length</span>
+        {isEditingStyling ? (
+          <form onSubmit={handleSaveStyling} className="flex flex-col gap-3.5 pt-1">
+            {/* Hair Profile */}
+            <div>
+              <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Hair Profile</label>
+              <input
+                type="text"
+                value={hairProfile}
+                onChange={(e) => setHairProfile(e.target.value)}
+                className="w-full h-9 px-3 bg-white rounded-xl text-[12px] border border-outline-variant focus:outline-none focus:border-[#b00055] mb-1.5"
+                placeholder="e.g. Wavy / Medium Length"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {hairOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setHairProfile(opt)}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                      hairProfile === opt
+                        ? 'bg-[#b00055] text-white border-[#b00055] font-semibold shadow-xs'
+                        : 'bg-white text-on-surface-variant border-outline-variant/60 hover:border-[#b00055]'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Skin Concern */}
+            <div>
+              <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Skin Concern</label>
+              <input
+                type="text"
+                value={skinConcern}
+                onChange={(e) => setSkinConcern(e.target.value)}
+                className="w-full h-9 px-3 bg-white rounded-xl text-[12px] border border-outline-variant focus:outline-none focus:border-[#b00055] mb-1.5"
+                placeholder="e.g. Hydration & De-Tan"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {skinOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setSkinConcern(opt)}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                      skinConcern === opt
+                        ? 'bg-[#b00055] text-white border-[#b00055] font-semibold shadow-xs'
+                        : 'bg-white text-on-surface-variant border-outline-variant/60 hover:border-[#b00055]'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Favorite Stylist */}
+            <div>
+              <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Favorite Stylist</label>
+              <input
+                type="text"
+                value={favoriteStylist}
+                onChange={(e) => setFavoriteStylist(e.target.value)}
+                className="w-full h-9 px-3 bg-white rounded-xl text-[12px] border border-outline-variant focus:outline-none focus:border-[#b00055] mb-1.5"
+                placeholder="e.g. Aarav (Scissors & Shears)"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {stylistOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setFavoriteStylist(opt)}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                      favoriteStylist === opt
+                        ? 'bg-[#b00055] text-white border-[#b00055] font-semibold shadow-xs'
+                        : 'bg-white text-on-surface-variant border-outline-variant/60 hover:border-[#b00055]'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Default Locality */}
+            <div>
+              <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Default Locality</label>
+              <input
+                type="text"
+                value={defaultLocality}
+                onChange={(e) => setDefaultLocality(e.target.value)}
+                className="w-full h-9 px-3 bg-white rounded-xl text-[12px] border border-outline-variant focus:outline-none focus:border-[#b00055] mb-1.5"
+                placeholder="e.g. Mansarovar, Jaipur"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {localityOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setDefaultLocality(opt)}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                      defaultLocality === opt
+                        ? 'bg-[#b00055] text-white border-[#b00055] font-semibold shadow-xs'
+                        : 'bg-white text-on-surface-variant border-outline-variant/60 hover:border-[#b00055]'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="submit"
+                className="flex-1 py-2.5 bg-[#b00055] text-white font-bold rounded-xl text-[12px] hover:bg-[#900045] transition-colors shadow-xs cursor-pointer"
+              >
+                Save Styling Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingStyling(false)}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl text-[12px] hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 text-[12px]">
+            <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
+              <span className="text-on-surface-variant text-[11px] block">Hair Profile</span>
+              <span className="font-semibold text-on-surface">{user.hairProfile || 'Wavy / Medium Length'}</span>
+            </div>
+            <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
+              <span className="text-on-surface-variant text-[11px] block">Skin Concern</span>
+              <span className="font-semibold text-on-surface">{user.skinConcern || 'Hydration & De-Tan'}</span>
+            </div>
+            <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
+              <span className="text-on-surface-variant text-[11px] block">Favorite Stylist</span>
+              <span className="font-semibold text-on-surface">{user.favoriteStylist || 'Aarav (Scissors & Shears)'}</span>
+            </div>
+            <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
+              <span className="text-on-surface-variant text-[11px] block">Default Locality</span>
+              <span className="font-semibold text-on-surface">{user.defaultLocality || 'Mansarovar, Jaipur'}</span>
+            </div>
           </div>
-          <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-            <span className="text-on-surface-variant text-[11px] block">Skin Concern</span>
-            <span className="font-semibold text-on-surface">Hydration & De-Tan</span>
-          </div>
-          <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-            <span className="text-on-surface-variant text-[11px] block">Favorite Stylist</span>
-            <span className="font-semibold text-on-surface">Aarav (Scissors & Shears)</span>
-          </div>
-          <div className="p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-            <span className="text-on-surface-variant text-[11px] block">Default Locality</span>
-            <span className="font-semibold text-on-surface">Mansarovar, Jaipur</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Edit Profile Form */}
+      {/* Edit Personal Profile Form */}
       <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4 shadow-xs mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -114,15 +289,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <h3 className="font-card-title text-[15px] font-bold text-on-surface">Personal Information</h3>
           </div>
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="text-[12px] font-semibold text-nexora-pink"
+            type="button"
+            onClick={() => setIsEditingPersonal(!isEditingPersonal)}
+            className="text-[12px] font-semibold text-[#b00055] cursor-pointer"
           >
-            {isEditing ? 'Cancel' : 'Edit'}
+            {isEditingPersonal ? 'Cancel' : 'Edit'}
           </button>
         </div>
 
-        {isEditing ? (
-          <form onSubmit={handleSave} className="flex flex-col gap-3">
+        {isEditingPersonal ? (
+          <form onSubmit={handleSavePersonal} className="flex flex-col gap-3">
             <div>
               <label className="text-[11px] text-on-surface-variant block mb-1">Full Name</label>
               <input

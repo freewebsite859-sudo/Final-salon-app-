@@ -10,6 +10,10 @@ export const INITIAL_USER: UserProfile = {
   loyaltyPoints: 450,
   preferredServices: ['Hair Cut', 'Hydra Facial', 'Gel Nails', 'Head Massage'],
   genderPreference: 'unisex',
+  hairProfile: 'Wavy / Medium Length',
+  skinConcern: 'Hydration & De-Tan',
+  favoriteStylist: 'Aarav (Scissors & Shears)',
+  defaultLocality: 'Mansarovar, Jaipur',
 };
 
 export const INITIAL_SALONS: Salon[] = [

@@ -49,6 +49,10 @@ export const AIAdvisorModal: React.FC<AIAdvisorModalProps> = ({
           preferences: {
             preferredServices: user.preferredServices,
             genderPreference: user.genderPreference,
+            hairProfile: user.hairProfile,
+            skinConcern: user.skinConcern,
+            favoriteStylist: user.favoriteStylist,
+            defaultLocality: user.defaultLocality,
           },
           location: {
             area: currentLocation,

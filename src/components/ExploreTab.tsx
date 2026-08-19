@@ -240,7 +240,7 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3.5 top-3 text-on-surface-variant text-[20px]">
+            <span className="material-symbols-outlined absolute left-3.5 top-3 text-[#b00055] text-[19px]">
               search
             </span>
             <input
@@ -254,16 +254,17 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
                 }
               }}
               placeholder="Search salons, services or Google Maps place..."
-              className="w-full h-11 pl-10 pr-4 bg-surface-container-highest text-on-surface rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-nexora-pink"
+              className="w-full h-11 pl-10 pr-9 bg-white/72 backdrop-blur-[20px] text-on-surface rounded-[18px] text-[13px] border border-[rgba(180,0,80,0.10)] shadow-[0_8px_25px_rgba(0,0,0,0.05)] focus:outline-none focus:border-[rgba(176,0,85,0.35)] focus:ring-4 focus:ring-[rgba(176,0,85,0.06)] transition-all duration-200"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => {
                   setSearchQuery('');
                   setGroundedSummary(null);
                   setGroundingChunks([]);
                 }}
-                className="absolute right-3 top-3 text-on-surface-variant hover:text-on-surface"
+                className="absolute right-3 top-3 text-on-surface-variant hover:text-[#b00055] transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -271,12 +272,13 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={() => {
               if (searchQuery.trim()) addRecentSearch(searchQuery);
               handlePerformGroundedSearch();
             }}
             disabled={isSearchingGrounded}
-            className="px-4 bg-primary text-white text-[13px] font-semibold rounded-xl flex items-center gap-1.5 hover:bg-nexora-pink transition-colors disabled:opacity-50 shrink-0 shadow-xs"
+            className="px-4 bg-[#b00055] text-white text-[12px] font-semibold rounded-[14px] flex items-center gap-1.5 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(176,0,85,0.20)] active:scale-95 transition-all duration-180 disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {isSearchingGrounded ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -290,8 +292,8 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
         {/* 3 Most Recent Search Queries Clickable Chips */}
         {recentSearches.length > 0 && (
           <div id="recent-searches-bar" className="flex items-center gap-1.5 flex-wrap pt-0.5">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0 mr-1">
-              <span className="material-symbols-outlined text-[14px] text-primary">history</span>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-[#b00055] uppercase tracking-wider shrink-0 mr-1">
+              <span className="material-symbols-outlined text-[14px]">history</span>
               <span>Recent:</span>
             </div>
 
@@ -302,16 +304,17 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
                   <button
                     key={`${query}-${index}`}
                     id={`recent-search-chip-${index}`}
+                    type="button"
                     onClick={() => handleSelectRecentQuery(query)}
-                    className={`group px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1.5 transition-all border ${
+                    className={`group h-8 px-3.5 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-[12px] ${
                       isSelected
-                        ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface hover:bg-surface-container hover:border-primary/40 border-outline-variant/30'
+                        ? 'bg-[#b00055] text-white font-bold shadow-xs border border-[#b00055]'
+                        : 'bg-white/68 border border-[rgba(176,0,85,0.10)] text-on-surface hover:-translate-y-0.5 hover:border-[rgba(176,0,85,0.25)] hover:shadow-xs'
                     }`}
                     title={`Click to search "${query}"`}
                   >
-                    <span className={`material-symbols-outlined text-[13px] ${isSelected ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary'}`}>
-                      search
+                    <span className={`material-symbols-outlined text-[14px] ${isSelected ? 'text-white' : 'text-[#b00055]/80 group-hover:text-[#b00055]'}`}>
+                      history
                     </span>
                     <span className="truncate max-w-[130px] sm:max-w-[200px]">{query}</span>
                   </button>
@@ -320,8 +323,9 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={handleClearRecentSearches}
-              className="text-[10px] text-on-surface-variant hover:text-nexora-pink transition-colors ml-auto hover:underline"
+              className="text-[11px] font-semibold text-[#b00055] hover:opacity-70 transition-opacity ml-auto cursor-pointer"
               title="Clear recent searches"
             >
               Clear

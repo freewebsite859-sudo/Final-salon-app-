@@ -138,4 +138,8 @@ export interface UserProfile {
   loyaltyPoints: number;
   preferredServices: string[];
   genderPreference: 'all' | 'women' | 'men' | 'unisex';
+  hairProfile?: string;
+  skinConcern?: string;
+  favoriteStylist?: string;
+  defaultLocality?: string;
 }

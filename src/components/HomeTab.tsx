@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Salon, Appointment, SalonService, Stylist, UserProfile } from '../types';
 import { AppointmentCountdownBanner, parseAppointmentDateTime } from './AppointmentCountdownBanner';
 
@@ -37,8 +37,26 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('hideBookNearestBanner') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [recentSearches, setRecentSearches] = useState(['Hair Cut', 'Nail Art']);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+
+  const handleDismissNearestBanner = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsBannerDismissed(true);
+    try {
+      localStorage.setItem('hideBookNearestBanner', 'true');
+    } catch (err) {
+      console.error('Failed to persist banner dismissal:', err);
+    }
+  };
 
   const heroSlides = [
     {
@@ -54,7 +72,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       id: 2,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBBZoBwG9VC_WH7e7g0fS6xdG95exWop0NGv607Wh3K_YUE7JoNvbN2H0HPQ-c1ncvY7Ky-PXEyF7R1Z2P_8067B_j8E2OfRPJPpgJmiKXXFqGAYUODZiIWpLuRK3AWiEkbP9jKqCTUbXWAKwCyKmeEEeHY8cSHq2T5beh7pR8hjNXKxf_jDyCfQd57luNOUbSBLb1JynqvIzCmhjdOPKff6D6x_IsPh2DGkgGooqyngd0MtFkyz2rL8g',
       badge: 'Relax',
-      badgeBg: 'bg-success-emerald/90',
+      badgeBg: 'bg-emerald-600/90',
       title: 'Spa Retreat',
       subtitle: 'Unwind and rejuvenate with herbal therapy',
       category: 'Spa',
@@ -63,20 +81,135 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       id: 3,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBW02ALTzDIp-qF-qF1JJVRKpBuauiOaixkhgn2svrDgUAUItBCdEpwJIp7WyPz5WAidOYLazzTluF0-1hKVjtxvyVbsxmCZq9KqoUHMvcFGeDe6t3HkRHbbUxHvATbVCvXJDqPJCAzxpqDJ89bdPcImhU7l7xlrmBzbhJwndjxfp7B4ZY8WqxOYsdDVS-lmyJFEALJ0UWW_p_lQWsCDgLQU0yE-JLXEwJwsh1eFqJi6h6lToF-RnDqEQ',
       badge: 'Trending',
-      badgeBg: 'bg-warning-amber/90',
+      badgeBg: 'bg-amber-600/90',
       title: 'Nail Artistry',
       subtitle: 'Express yourself with chrome & gel extensions',
       category: 'Nails',
     },
+    {
+      id: 4,
+      image: '/src/assets/images/skin_glow_care_hero_1787077833623.jpg',
+      badge: 'Glow Care',
+      badgeBg: 'bg-nexora-pink/90',
+      title: 'Skin & Glow Care',
+      subtitle: 'Rejuvenating facials & hydra therapies',
+      category: 'Beauty',
+    },
+    {
+      id: 5,
+      image: '/src/assets/images/nail_bridal_art_hero_1787077848463.jpg',
+      badge: 'Bridal Art',
+      badgeBg: 'bg-purple-600/90',
+      title: 'Nail & Bridal Art',
+      subtitle: 'Trending nail extensions & luxury makeup',
+      category: 'Nail Studio',
+    },
   ];
 
+  // Auto-scrolling carousel logic (loops continuously every 4.5 seconds, pauses on hover/touch)
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [isPaused, heroSlides.length]);
+
+  const handlePrevSlide = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActiveSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
+
+  const handleNextSlide = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+  };
+
   const exploreCategories = [
-    { name: 'Hair Cut', icon: 'content_cut', query: 'Hair Cut' },
-    { name: 'Barber', icon: 'face_6', query: 'Barber' },
-    { name: 'Unisex', icon: 'wc', query: 'Unisex' },
-    { name: 'Salon', icon: 'chair', query: 'Salon' },
-    { name: 'Beauty', icon: 'spa', query: 'Beauty' },
-    { name: 'Nail Studio', icon: 'back_hand', query: 'Nail Studio' },
+    {
+      name: 'Hair Cut',
+      desc: 'Precision styling & trim',
+      icon: 'content_cut',
+      query: 'Hair Cut',
+      image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Barber',
+      desc: 'Beard trim & grooming',
+      icon: 'face',
+      query: 'Barber',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Unisex',
+      desc: 'Trendsetting styling',
+      icon: 'wc',
+      query: 'Unisex',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Salon',
+      desc: 'Luxury complete makeover',
+      icon: 'storefront',
+      query: 'Salon',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Beauty',
+      desc: 'Skincare & aesthetic care',
+      icon: 'auto_awesome',
+      query: 'Beauty',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Nail Studio',
+      desc: 'Gel manicures & nail art',
+      icon: 'dry',
+      query: 'Nail Studio',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Hair Spa',
+      desc: 'Deep conditioning & repair',
+      icon: 'water_drop',
+      query: 'Hair Spa',
+      image: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Facial',
+      desc: 'Hydra glow & rejuvenation',
+      icon: 'spa',
+      query: 'Facial & Skin',
+      image: 'https://images.unsplash.com/photo-1600180325983-05b18420e980?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Makeup',
+      desc: 'Glam & party makeover',
+      icon: 'brush',
+      query: 'Makeup',
+      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Massage',
+      desc: 'Body therapy & relaxation',
+      icon: 'self_improvement',
+      query: 'Massage',
+      image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Hair Coloring',
+      desc: 'Balayage & global tint',
+      icon: 'palette',
+      query: 'Hair Coloring',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&q=80&w=400',
+    },
+    {
+      name: 'Bridal Makeup',
+      desc: 'Royal bridal transformation',
+      icon: 'diamond',
+      query: 'Bridal Makeup',
+      image: 'https://images.unsplash.com/photo-1595476108010-b4d1f10281b1?auto=format&fit=crop&q=80&w=400',
+    },
   ];
 
   const quickFilters = ['Open Now', 'Top Rated', 'Offers', 'At Home', 'Luxury', 'Budget'];
@@ -131,44 +264,96 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
       {/* Featured Stories Carousel */}
       <section className="px-page-margin mb-6">
-        <div className="relative w-full h-[200px] sm:h-[230px] rounded-2xl overflow-hidden shadow-md">
-          <div 
-            className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full scroll-smooth"
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              const idx = Math.round(el.scrollLeft / el.offsetWidth);
-              setActiveSlide(idx);
-            }}
+        <div
+          className="relative w-full h-[210px] sm:h-[240px] rounded-2xl overflow-hidden shadow-lg border border-outline-variant/30 group bg-neutral-900"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
+          {/* Carousel Track */}
+          <div
+            className="flex w-full h-full transition-transform duration-700 ease-out"
+            style={{ transform: `translateX(-${activeSlide * 100}%)` }}
           >
-            {heroSlides.map((slide, idx) => (
+            {heroSlides.map((slide) => (
               <div
                 key={slide.id}
                 onClick={() => onSelectCategory(slide.category)}
-                className="min-w-full h-full snap-center relative cursor-pointer group"
+                className="min-w-full w-full h-full relative cursor-pointer shrink-0"
               >
                 <img
                   alt={slide.title}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   src={slide.image}
+                  referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <span className={`${slide.badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider mb-1.5 inline-block`}>
+
+                {/* Dual Gradients for Top Logo Watermark & Bottom Content Readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/85" />
+
+                {/* Prominent NEXORA Brand / Logo Overlay */}
+                <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-md">
+                  <span className="w-2 h-2 rounded-full bg-nexora-pink animate-pulse" />
+                  <span className="text-[11px] font-black tracking-widest text-white uppercase font-display">
+                    NEXORA
+                  </span>
+                </div>
+
+                {/* Top Right Slide Counter */}
+                <div className="absolute top-3.5 right-3.5 z-10 text-[10px] font-bold text-white/90 bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10">
+                  0{slide.id} / 0{heroSlides.length}
+                </div>
+
+                {/* Bottom Slide Content */}
+                <div className="absolute bottom-4 left-4 right-16 text-white z-10 text-left">
+                  <span className={`${slide.badgeBg} text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-1.5 inline-block shadow-2xs`}>
                     {slide.badge}
                   </span>
-                  <h3 className="font-card-title text-[20px] font-bold leading-tight mb-0.5">{slide.title}</h3>
-                  <p className="font-metadata text-[13px] opacity-90">{slide.subtitle}</p>
+                  <h3 className="font-card-title text-[20px] sm:text-[22px] font-extrabold leading-tight mb-0.5 drop-shadow-sm">
+                    {slide.title}
+                  </h3>
+                  <p className="font-metadata text-[12px] sm:text-[13px] opacity-90 line-clamp-1 drop-shadow-xs">
+                    {slide.subtitle}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-          {/* Indicator Dots */}
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+
+          {/* Left Arrow Button */}
+          <button
+            type="button"
+            onClick={handlePrevSlide}
+            aria-label="Previous slide"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            type="button"
+            onClick={handleNextSlide}
+            aria-label="Next slide"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+          </button>
+
+          {/* Pagination Dots */}
+          <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10">
             {heroSlides.map((_, i) => (
-              <div
+              <button
                 key={i}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveSlide(i);
+                }}
+                aria-label={`Go to slide ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  activeSlide === i ? 'bg-white w-5' : 'bg-white/50 w-1.5'
+                  activeSlide === i ? 'bg-nexora-pink w-5' : 'bg-white/50 hover:bg-white w-1.5'
                 }`}
               />
             ))}
@@ -227,11 +412,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         );
       })()}
 
-      {/* Search Input */}
-      <section className="px-page-margin mb-6 relative z-10">
+      {/* Search Input — 2026 Floating Glass Search */}
+      <section className="px-page-margin mb-[22px] relative z-10">
         <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-on-surface-variant group-focus-within:text-nexora-pink transition-colors">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none z-10">
+            <span className="material-symbols-outlined text-[19px] text-[#b00055] group-focus-within:text-[#b00055] transition-colors">
               search
             </span>
           </div>
@@ -241,12 +426,13 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search salons, services or stylists in Jaipur..."
-            className="w-full h-[48px] pl-11 pr-24 bg-surface-container-highest text-on-surface font-body-md text-[14px] rounded-xl shadow-xs focus:outline-none focus:ring-1 focus:ring-nexora-pink focus:bg-surface-container-lowest transition-all"
+            className="w-full h-[48px] pl-11 pr-24 bg-[rgba(255,255,255,0.72)] backdrop-blur-[20px] text-on-surface font-body-md text-[13px] rounded-[18px] border border-[rgba(180,0,80,0.15)] shadow-[0_8px_25px_rgba(0,0,0,0.05)] focus:outline-none focus:border-[rgba(176,0,85,0.40)] focus:ring-4 focus:ring-[rgba(176,0,85,0.08)] focus:shadow-[0_0_18px_rgba(176,0,85,0.15)] transition-all duration-200"
           />
           {searchInput && (
             <button
+              type="button"
               onClick={() => onSearchSubmit(searchInput)}
-              className="absolute right-2 top-2 px-3 py-1.5 bg-primary text-white text-[12px] font-semibold rounded-lg hover:bg-nexora-pink transition-colors"
+              className="absolute right-2 top-2 px-3.5 py-1.5 bg-[#b00055] text-white text-[11px] font-semibold rounded-[10px] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(176,0,85,0.20)] active:scale-95 transition-all duration-180 cursor-pointer"
             >
               Search
             </button>
@@ -254,56 +440,64 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         </div>
       </section>
 
-      <div className="flex flex-col gap-6">
-        {/* Book Again Carousel */}
-        <section className="-mx-page-margin">
-          <div className="flex items-center justify-between mb-3 px-page-margin">
-            <h2 className="font-section-heading text-[17px] font-bold text-on-surface">Book Again</h2>
+      <div className="flex flex-col">
+        {/* Book Again Section — Premium Glass Cards */}
+        <section className="-mx-page-margin mb-[24px]">
+          <div className="flex items-center justify-between mb-[12px] px-page-margin">
+            <h2 className="font-section-heading text-[15px] font-bold text-on-surface">Book Again</h2>
           </div>
-          <div className="flex overflow-x-auto no-scrollbar gap-3.5 px-page-margin pb-1 snap-x">
+          <div className="flex overflow-x-auto no-scrollbar gap-3 px-page-margin pb-1 snap-x">
+            {/* Card 1 */}
             <div 
               onClick={() => onSelectCategory('Hair Cut')}
-              className="min-w-[280px] snap-center bg-surface-container-low border border-outline-variant rounded-xl p-3 flex items-center justify-between shadow-xs cursor-pointer hover:border-nexora-pink transition-colors"
+              className="min-w-[280px] sm:min-w-[300px] snap-center bg-white/70 backdrop-blur-[18px] border border-[rgba(180,0,80,0.13)] rounded-[18px] p-3 flex items-center justify-between shadow-[0_8px_25px_rgba(0,0,0,0.045)] cursor-pointer hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[0_14px_32px_rgba(0,0,0,0.08)] hover:border-[rgba(176,0,85,0.20)] active:scale-[0.98] transition-all duration-200"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-nexora-pink shadow-inner">
-                  <span className="material-symbols-outlined text-[24px]">content_cut</span>
+                <div className="w-10 h-10 rounded-[12px] bg-[rgba(255,225,235,0.65)] border border-[rgba(176,0,85,0.08)] flex items-center justify-center text-[#b00055] shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">content_cut</span>
                 </div>
                 <div>
-                  <h3 className="font-card-title text-[14px] font-semibold text-on-surface mb-0.5">Hair Cut at Scissors & Shears</h3>
-                  <p className="font-metadata text-[11px] text-on-surface-variant">Last booked recently</p>
+                  <h3 className="font-card-title text-[12px] font-semibold text-on-surface mb-0.5 leading-tight">
+                    Hair Cut at Scissors & Shears
+                  </h3>
+                  <p className="font-metadata text-[10px] text-on-surface-variant">Last booked recently</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelectCategory('Hair Cut');
                 }}
-                className="px-3 py-1.5 bg-primary-container text-white font-button-text text-[12px] rounded-lg hover:bg-primary transition-colors shadow-xs shrink-0"
+                className="px-3.5 py-2 bg-[#b00055] text-white font-button-text text-[11px] font-semibold rounded-[10px] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(176,0,85,0.20)] active:scale-95 transition-all duration-180 shrink-0 ml-2 cursor-pointer"
               >
                 Book
               </button>
             </div>
 
+            {/* Card 2 */}
             <div 
               onClick={() => onSelectCategory('Facial & Skin')}
-              className="min-w-[280px] snap-center bg-surface-container-low border border-outline-variant rounded-xl p-3 flex items-center justify-between shadow-xs cursor-pointer hover:border-nexora-pink transition-colors"
+              className="min-w-[280px] sm:min-w-[300px] snap-center bg-white/70 backdrop-blur-[18px] border border-[rgba(180,0,80,0.13)] rounded-[18px] p-3 flex items-center justify-between shadow-[0_8px_25px_rgba(0,0,0,0.045)] cursor-pointer hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[0_14px_32px_rgba(0,0,0,0.08)] hover:border-[rgba(176,0,85,0.20)] active:scale-[0.98] transition-all duration-200"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-nexora-pink shadow-inner">
-                  <span className="material-symbols-outlined text-[24px]">spa</span>
+                <div className="w-10 h-10 rounded-[12px] bg-[rgba(255,225,235,0.65)] border border-[rgba(176,0,85,0.08)] flex items-center justify-center text-[#b00055] shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">spa</span>
                 </div>
                 <div>
-                  <h3 className="font-card-title text-[14px] font-semibold text-on-surface mb-0.5">Hydra Facial Deluxe</h3>
-                  <p className="font-metadata text-[11px] text-on-surface-variant">Last booked 2 months ago</p>
+                  <h3 className="font-card-title text-[12px] font-semibold text-on-surface mb-0.5 leading-tight">
+                    Hydra Facial Deluxe
+                  </h3>
+                  <p className="font-metadata text-[10px] text-on-surface-variant">Last booked 2 months ago</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelectCategory('Facial & Skin');
                 }}
-                className="px-3 py-1.5 bg-primary-container text-white font-button-text text-[12px] rounded-lg hover:bg-primary transition-colors shadow-xs shrink-0"
+                className="px-3.5 py-2 bg-[#b00055] text-white font-button-text text-[11px] font-semibold rounded-[10px] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(176,0,85,0.20)] active:scale-95 transition-all duration-180 shrink-0 ml-2 cursor-pointer"
               >
                 Book
               </button>
@@ -311,26 +505,28 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           </div>
         </section>
 
-        {/* Recent Searches */}
+        {/* Recent Searches — Compact Glass Chips */}
         {recentSearches.length > 0 && (
-          <section className="px-page-margin">
-            <div className="flex items-center justify-between mb-2.5">
-              <h2 className="font-section-heading text-[16px] font-bold text-on-surface">Recent Searches</h2>
+          <section className="px-page-margin mb-[24px]">
+            <div className="flex items-center justify-between mb-[10px]">
+              <h2 className="font-section-heading text-[15px] font-bold text-on-surface">Recent Searches</h2>
               <button
+                type="button"
                 onClick={() => setRecentSearches([])}
-                className="font-button-text text-[12px] font-semibold text-nexora-pink hover:underline"
+                className="font-button-text text-[11px] font-semibold text-[#b00055] hover:opacity-70 transition-opacity cursor-pointer"
               >
                 Clear
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex overflow-x-auto no-scrollbar sm:flex-wrap gap-2 pb-0.5">
               {recentSearches.map((term) => (
                 <button
                   key={term}
+                  type="button"
                   onClick={() => handleRecentClick(term)}
-                  className="h-8 px-3.5 bg-surface-container rounded-full flex items-center gap-1.5 hover:bg-surface-container-high transition-colors text-on-surface text-[12px]"
+                  className="h-8 px-3.5 bg-white/68 backdrop-blur-[12px] border border-[rgba(176,0,85,0.10)] rounded-full flex items-center gap-1.5 hover:-translate-y-0.5 hover:border-[rgba(176,0,85,0.25)] hover:shadow-xs active:scale-95 transition-all duration-180 text-on-surface text-[11px] font-medium shrink-0 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-on-surface-variant">history</span>
+                  <span className="material-symbols-outlined text-[15px] text-[#b00055]/80">history</span>
                   <span>{term}</span>
                 </button>
               ))}
@@ -338,62 +534,145 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           </section>
         )}
 
-        {/* Trending Tags */}
-        <section className="px-page-margin">
-          <h2 className="font-section-heading text-[16px] font-bold text-on-surface mb-2.5">Trending</h2>
-          <div className="flex flex-wrap gap-2">
+        {/* Trending Section — Premium Trend Chips */}
+        <section className="px-page-margin mb-[24px]">
+          <h2 className="font-section-heading text-[15px] font-bold text-on-surface mb-[10px]">Trending</h2>
+          <div className="flex overflow-x-auto no-scrollbar sm:flex-wrap gap-2 pb-0.5">
             {['Hair Spa', 'Hydra Facial', 'Bridal Makeup', 'Balayage', 'Beard Spa'].map((tag) => (
               <button
                 key={tag}
+                type="button"
                 onClick={() => onSelectCategory(tag)}
-                className="h-8 px-3.5 bg-surface-container-low border border-outline-variant rounded-full flex items-center gap-1.5 hover:bg-surface-container transition-colors text-on-surface text-[12px]"
+                className="h-8 px-3.5 bg-white/70 backdrop-blur-[12px] border border-[rgba(176,0,85,0.15)] rounded-full flex items-center gap-1.5 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] hover:border-[rgba(176,0,85,0.30)] active:scale-[0.97] transition-all duration-180 text-on-surface text-[11px] font-medium shrink-0 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[15px] text-warning-amber">trending_up</span>
+                <span className="material-symbols-outlined text-[15px] text-[#b00055]">trending_up</span>
                 <span>{tag}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* Exclusive for You Promos */}
-        <section className="-mx-page-margin">
-          <h2 className="font-section-heading text-[17px] font-bold text-on-surface mb-3 px-page-margin">
-            Exclusive for You
-          </h2>
-          <div className="flex overflow-x-auto no-scrollbar gap-3.5 px-page-margin pb-1 snap-x">
-            <div className="min-w-[280px] snap-center bg-gradient-to-r from-nexora-pink to-primary rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded text-white backdrop-blur-sm">
-                  PROMO
-                </span>
-                <span className="material-symbols-outlined opacity-80 text-[20px]">local_offer</span>
+        {/* Exclusive for You - 3 Equal Cinematic Professional Ads in Single Row */}
+        <section className="px-page-margin mb-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-section-heading text-on-surface font-bold text-base sm:text-lg">
+              Exclusive for You
+            </h2>
+          </div>
+
+          {/* Grid Container to fit all 3 ad cards simultaneously without overflow */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full pb-2">
+            
+            {/* Card 1: Deep Pink Cinematic Styling Ad */}
+            <div className="rounded-xl p-2.5 sm:p-4 bg-[#780032] border border-nexora-pink/20 shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl flex flex-col justify-between h-[180px] sm:h-[210px] relative overflow-hidden group">
+              {/* Cinematic Commercial Photography Background */}
+              <img 
+                src="/images/offers/nexora-premium.jpg" 
+                alt="Nexora Premium Hair Salon & Styling"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none group-hover:scale-105 transition-transform duration-500"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30 pointer-events-none" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider bg-white/20 text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                    PROMO
+                  </span>
+                  <span className="material-symbols-outlined text-white text-[16px] sm:text-[20px] transition-transform duration-300 group-hover:scale-110">
+                    local_offer
+                  </span>
+                </div>
+                <h3 className="font-card-title text-xs sm:text-base font-bold text-white leading-tight mb-1 line-clamp-2 group-hover:text-amber-200 transition-colors">
+                  20% Off Nexora Premium
+                </h3>
+                <p className="text-[10px] sm:text-xs text-white/80 line-clamp-2 leading-tight">
+                  Hair & grooming packages upgrade.
+                </p>
               </div>
-              <h3 className="font-card-title text-[18px] font-bold mb-0.5">20% Off Nexora Premium</h3>
-              <p className="text-[12px] opacity-90 mb-3">Upgrade your hair & grooming game today.</p>
               <button
+                type="button"
                 onClick={() => onBookSalon(salons[0])}
-                className="px-4 py-1.5 bg-white text-nexora-pink font-button-text rounded-lg hover:bg-surface-container-lowest transition-colors text-[12px] font-bold"
+                className="relative z-10 w-full bg-white text-[#780032] font-bold text-[10px] sm:text-xs py-1.5 rounded-lg shadow hover:bg-opacity-90 transition-all active:scale-[0.98] cursor-pointer"
               >
-                Claim Now
+                Claim
               </button>
             </div>
 
-            <div className="min-w-[280px] snap-center bg-gradient-to-r from-surface-tint to-surface-variant rounded-2xl p-4 text-on-surface shadow-md border border-outline-variant/30 relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-[10px] font-bold bg-white/50 px-2 py-0.5 rounded text-on-surface backdrop-blur-sm">
-                  NEW
-                </span>
-                <span className="material-symbols-outlined text-primary text-[20px]">spa</span>
+            {/* Card 2: Center High-Contrast Glow Hydra Facial Ad */}
+            <div className="rounded-xl p-2.5 sm:p-4 bg-[#0a0a0a] border-2 border-nexora-pink shadow-lg text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col justify-between h-[180px] sm:h-[210px] relative overflow-hidden group">
+              {/* Cinematic Commercial Photography Background */}
+              <img 
+                src="/images/offers/hydra-facial-deluxe.jpg" 
+                alt="Hydra Facial Deluxe Clinical Spa Treatment"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none group-hover:scale-105 transition-transform duration-500"
+                referrerPolicy="no-referrer"
+              />
+              {/* Subtle dark gradient overlay for text readability & glow accent */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 pointer-events-none" />
+              <div className="absolute -top-12 -left-12 w-28 h-28 bg-nexora-pink/30 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider bg-nexora-pink text-white px-1.5 py-0.5 rounded-full shadow-md shadow-black/30">
+                    FEATURED
+                  </span>
+                  <span className="material-symbols-outlined text-nexora-pink text-[16px] sm:text-[20px] transition-transform duration-300 group-hover:scale-110">
+                    spa
+                  </span>
+                </div>
+                <h3 className="font-card-title text-xs sm:text-base font-bold text-white leading-tight mb-1 line-clamp-1">
+                  Hydra Facial Deluxe
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-200 line-clamp-2 leading-tight">
+                  7-step clinical glow facial package for fresh skin.
+                </p>
               </div>
-              <h3 className="font-card-title text-[18px] font-bold mb-0.5">Hydra Facial Deluxe</h3>
-              <p className="text-[12px] text-on-surface-variant mb-3">Experience the clinical 7-step glow.</p>
               <button
-                onClick={() => onBookSalon(salons[1])}
-                className="px-4 py-1.5 bg-primary text-white font-button-text rounded-lg hover:bg-nexora-pink transition-colors text-[12px] font-bold"
+                type="button"
+                onClick={() => onBookSalon(salons[1] || salons[0])}
+                className="relative z-10 w-full bg-nexora-pink text-white font-bold text-[10px] sm:text-xs py-1.5 rounded-lg shadow-md hover:bg-opacity-90 transition-all active:scale-[0.98] group-hover:scale-[1.02] cursor-pointer"
               >
-                Explore
+                Explore Glow
               </button>
             </div>
+
+            {/* Card 3: Dark Charcoal Cinematic Bridal Pass Ad */}
+            <div className="rounded-xl p-2.5 sm:p-4 bg-[#111827] border border-amber-400/20 shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl flex flex-col justify-between h-[180px] sm:h-[210px] relative overflow-hidden group">
+              {/* Cinematic Commercial Photography Background */}
+              <img 
+                src="/images/offers/bridal-styling-pass.jpg" 
+                alt="Luxury Indian Bridal Beauty & Styling Session"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none group-hover:scale-105 transition-transform duration-500"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30 pointer-events-none" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                    LIMITED
+                  </span>
+                  <span className="material-symbols-outlined text-amber-300 text-[16px] sm:text-[20px] transition-transform duration-300 group-hover:scale-110">
+                    auto_awesome
+                  </span>
+                </div>
+                <h3 className="font-card-title text-xs sm:text-base font-bold text-white leading-tight mb-1 line-clamp-2 group-hover:text-amber-200 transition-colors">
+                  Bridal & Styling Pass
+                </h3>
+                <p className="text-[10px] sm:text-xs text-slate-300 line-clamp-2 leading-tight">
+                  Book top stylists for weddings & events.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectCategory('Bridal Makeup')}
+                className="relative z-10 w-full bg-amber-400 text-slate-950 font-bold text-[10px] sm:text-xs py-1.5 rounded-lg shadow hover:bg-amber-300 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                Book Package
+              </button>
+            </div>
+
           </div>
         </section>
 
@@ -414,25 +693,47 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           </div>
         </section>
 
-        {/* Explore Services Icons */}
-        <section className="-mx-page-margin">
-          <h2 className="font-section-heading text-[17px] font-bold text-on-surface mb-3 px-page-margin">
-            Explore Services
-          </h2>
-          <div className="flex overflow-x-auto no-scrollbar gap-3.5 px-page-margin pb-1">
+        {/* Explore Services 12-Card Glassmorphism Grid */}
+        <section className="px-page-margin bg-transparent">
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="font-section-heading text-[16px] font-bold text-on-surface">
+              Explore Services
+            </h2>
+            <span className="text-[11px] font-semibold text-[#b00055]">12 Services</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4 w-full bg-transparent">
             {exploreCategories.map((cat) => (
-              <button
+              <div
                 key={cat.name}
                 onClick={() => onSelectCategory(cat.query)}
-                className="flex flex-col items-center gap-1.5 min-w-[70px] group text-center"
+                className="bg-white/70 backdrop-blur-[18px] border border-white/80 sm:border-[rgba(180,0,80,0.13)] shadow-[0_8px_25px_rgba(0,0,0,0.045)] rounded-[22px] p-3.5 flex flex-col items-center text-center relative overflow-hidden group cursor-pointer hover:scale-[1.05] hover:-translate-y-1.5 hover:shadow-[0_16px_36px_rgba(176,0,85,0.15)] hover:border-[rgba(176,0,85,0.30)] active:scale-[0.98] transition-all duration-300 ease-out before:absolute before:inset-0 before:rounded-[22px] before:bg-gradient-to-b before:from-white/40 before:to-transparent before:pointer-events-none"
               >
-                <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-nexora-pink shadow-xs border border-outline-variant/30 group-hover:bg-primary group-hover:text-white transition-all">
-                  <span className="material-symbols-outlined text-[26px]">{cat.icon}</span>
+                {/* Large Circular Cinematic Photography */}
+                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full overflow-hidden relative mb-2.5 border-2 border-white/90 shadow-md group-hover:scale-[1.04] transition-transform duration-300 shrink-0">
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                  {/* Small Elegant Icon Badge Overlay */}
+                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#b00055] text-white flex items-center justify-center shadow-md border border-white/90">
+                    <span className="material-symbols-outlined text-[13px]">{cat.icon}</span>
+                  </div>
                 </div>
-                <span className="text-[12px] font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">
+
+                {/* Service Name */}
+                <h3 className="font-bold text-[13px] sm:text-[14px] text-on-surface leading-tight mb-1 group-hover:text-[#b00055] transition-colors">
                   {cat.name}
-                </span>
-              </button>
+                </h3>
+
+                {/* Short Description */}
+                <p className="text-[10px] sm:text-[11px] text-on-surface-variant line-clamp-1 leading-snug opacity-90">
+                  {cat.desc}
+                </p>
+              </div>
             ))}
           </div>
         </section>
@@ -592,20 +893,31 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       </div>
 
       {/* Floating Bottom Quick Action */}
-      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+12px)] left-0 w-full px-page-margin z-30 pointer-events-none">
-        <div className="max-w-md mx-auto bg-surface/95 backdrop-blur-md border border-outline-variant/60 p-3 rounded-2xl shadow-xl flex items-center justify-between gap-3 pointer-events-auto">
-          <div className="flex-1">
-            <p className="font-card-title text-[13px] font-semibold text-on-surface">Need a quick haircut or facial?</p>
+      {!isBannerDismissed && (
+        <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+12px)] left-0 w-full px-page-margin z-30 pointer-events-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-3">
+          <div className="max-w-md mx-auto bg-surface/95 backdrop-blur-md border border-outline-variant/60 p-3 rounded-2xl shadow-xl flex items-center justify-between gap-2.5 pointer-events-auto relative group">
+            <div className="flex-1 pr-1">
+              <p className="font-card-title text-[13px] font-semibold text-on-surface leading-snug">Need a quick haircut or facial?</p>
+            </div>
+            <button
+              onClick={onOpenQuickNearest}
+              className="bg-nexora-pink text-white font-button-text text-[13px] py-2 px-3.5 rounded-xl hover:bg-primary transition-colors flex items-center gap-1.5 shadow-md whitespace-nowrap shrink-0 active:scale-95"
+            >
+              <span>⚡</span>
+              <span>Book Nearest</span>
+            </button>
+            <button
+              onClick={handleDismissNearestBanner}
+              aria-label="Dismiss banner"
+              id="dismiss-nearest-banner-btn"
+              className="w-7 h-7 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container flex items-center justify-center transition-colors shrink-0 active:scale-90"
+              title="Dismiss this recommendation"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
           </div>
-          <button
-            onClick={onOpenQuickNearest}
-            className="bg-nexora-pink text-white font-button-text text-[13px] py-2 px-4 rounded-xl hover:bg-primary transition-colors flex items-center gap-1.5 shadow-md whitespace-nowrap"
-          >
-            <span>⚡</span>
-            <span>Book Nearest</span>
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
