@@ -128,10 +128,19 @@ export const SavedTab: React.FC<SavedTabProps> = ({
           </div>
         )
       ) : (
+        savedServiceItems.length === 0 ? (
+          <div className="py-12 text-center bg-surface-container-low rounded-2xl border border-outline-variant/40 p-6">
+            <span className="material-symbols-outlined text-[32px] text-nexora-pink mb-2">bookmark</span>
+            <h3 className="font-bold text-[16px] text-on-surface mb-1">No saved services yet</h3>
+            <p className="text-[13px] text-on-surface-variant max-w-xs mx-auto">
+              Bookmark a treatment from any salon menu to rebook it from here.
+            </p>
+          </div>
+        ) : (
         <div className="flex flex-col gap-3">
-          {savedServices.map((srv) => (
+          {savedServiceItems.map((srv) => (
             <div
-              key={srv.id}
+              key={`${srv.salon.id}-${srv.id}`}
               className="bg-surface-container-low border border-outline-variant rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs"
             >
               <div className="flex-1 min-w-0">
@@ -146,15 +155,28 @@ export const SavedTab: React.FC<SavedTabProps> = ({
                   ₹{srv.discountPrice || srv.price} · {srv.duration} mins
                 </span>
               </div>
-              <button
-                onClick={() => onBookSalon(srv.salon, srv)}
-                className="px-3.5 py-2 bg-primary text-white text-[12px] font-bold rounded-xl hover:bg-nexora-pink transition-colors shrink-0 shadow-xs"
-              >
-                Book
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {onToggleSaveService && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleSaveService(srv.salon.id, srv.id)}
+                    className="w-9 h-9 rounded-xl bg-surface-container text-nexora-pink flex items-center justify-center hover:bg-surface-container-high transition-colors"
+                    title="Remove saved service"
+                  >
+                    <span className="material-symbols-outlined text-[18px] fill-1">bookmark</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => onBookSalon(srv.salon, srv)}
+                  className="px-3.5 py-2 bg-primary text-white text-[12px] font-bold rounded-xl hover:bg-nexora-pink transition-colors shadow-xs"
+                >
+                  Book
+                </button>
+              </div>
             </div>
           ))}
         </div>
+        )
       )}
     </div>
   );
