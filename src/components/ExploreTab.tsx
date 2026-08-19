@@ -47,7 +47,8 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.slice(0, 3);
+          const valid = parsed.filter((q): q is string => typeof q === 'string' && q.trim() !== '');
+          if (valid.length > 0) return valid.slice(0, 3);
         }
       }
     } catch (e) {
