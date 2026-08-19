@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Salon, SalonService, Stylist, Appointment } from '../types';
 
 interface BookingModalProps {
@@ -9,6 +9,7 @@ interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirmBooking: (appointment: Appointment) => void;
+  onViewAppointments?: () => void;
   onOpenSummary?: (draft: {
     salon: Salon;
     services: SalonService[];
@@ -27,29 +28,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
   onConfirmBooking,
+  onViewAppointments,
   onOpenSummary,
 }) => {
-  if (!isOpen || !salon) return null;
-
-  const [selectedServices, setSelectedServices] = useState<SalonService[]>(() => {
-    if (initialServices && initialServices.length > 0) {
-      return initialServices;
-    }
-    if (initialService) {
-      return [initialService];
-    }
-    return salon.services.length > 0 ? [salon.services[0]] : [];
-  });
-  const [selectedStylist, setSelectedStylist] = useState<Stylist | null>(
-    initialStylist || (salon.stylists.length > 0 ? salon.stylists[0] : null)
-  );
-  
-  // Date state
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
+  const [selectedServices, setSelectedServices] = useState<SalonService[]>([]);
+  const [selectedStylist, setSelectedStylist] = useState<Stylist | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedTime, setSelectedTime] = useState<string>('5:30 PM');
   const [specialNotes, setSpecialNotes] = useState<string>('');
@@ -58,6 +46,30 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Appointment | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !salon) return;
+
+    if (initialServices && initialServices.length > 0) {
+      setSelectedServices(initialServices);
+    } else if (initialService) {
+      setSelectedServices([initialService]);
+    } else {
+      setSelectedServices(salon.services.length > 0 ? [salon.services[0]] : []);
+    }
+
+    setSelectedStylist(initialStylist || (salon.stylists.length > 0 ? salon.stylists[0] : null));
+    setSelectedDate(todayStr);
+    setSelectedTime('5:30 PM');
+    setSpecialNotes('');
+    setCouponCode('');
+    setAppliedDiscountPercent(0);
+    setCouponMessage(null);
+    setIsSuccess(false);
+    setConfirmedBooking(null);
+  }, [isOpen, salon, initialService, initialServices, initialStylist, todayStr]);
+
+  if (!isOpen || !salon) return null;
 
   const timeSlots = [
     '10:00 AM',
@@ -102,6 +114,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedServices.length === 0) return;
     const newAppointment: Appointment = {
       id: `apt-${Date.now()}`,
       salonId: salon.id,
@@ -196,7 +209,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </a>
               )}
               <button
-                onClick={onClose}
+                onClick={() => {
+                  if (onViewAppointments) {
+                    onViewAppointments();
+                  } else {
+                    onClose();
+                  }
+                }}
                 className="w-full py-3 bg-primary text-white font-button-text rounded-xl hover:bg-nexora-pink transition-colors shadow-md"
               >
                 Done & View Appointments

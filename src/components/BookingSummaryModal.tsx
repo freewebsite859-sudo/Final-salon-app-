@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Salon, SalonService, Stylist, Appointment } from '../types';
 
 export interface BookingSummaryModalProps {
@@ -17,6 +17,7 @@ export interface BookingSummaryModalProps {
   onChangeDateTime?: () => void;
   onUpdateServices?: (services: SalonService[]) => void;
   onUpdateNotes?: (notes: string) => void;
+  onViewAppointments?: () => void;
 }
 
 // Helpers
@@ -88,9 +89,8 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
   onChangeDateTime,
   onUpdateServices,
   onUpdateNotes,
+  onViewAppointments,
 }) => {
-  if (!isOpen || !salon) return null;
-
   const [notes, setNotes] = useState<string>(specialNotes);
   const [couponCode, setCouponCode] = useState<string>('');
   const [appliedDiscountPercent, setAppliedDiscountPercent] = useState<number>(0);
@@ -100,7 +100,22 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
   const [isEditingNotes, setIsEditingNotes] = useState<boolean>(false);
   const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
   const isSubmitting = buttonState !== 'idle';
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setNotes(specialNotes);
+    setCouponCode('');
+    setAppliedDiscountPercent(0);
+    setCouponMessage(null);
+    setIsSuccess(false);
+    setConfirmedBooking(null);
+    setIsEditingNotes(false);
+    setButtonState('idle');
+    setPaymentError(null);
+    setCopiedUpi(false);
+  }, [isOpen, salon?.id, date, time, specialNotes]);
 
   // Total duration & price calculations
   const totalDuration = useMemo(() => {
@@ -128,7 +143,6 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
     return Math.max(0, finalTotal - advanceAmount);
   }, [finalTotal, advanceAmount]);
 
-  const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
   const handleCopyUpi = () => {
     navigator.clipboard.writeText('nexorasalon@upi');
     setCopiedUpi(true);
@@ -170,7 +184,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (buttonState !== 'idle') return;
+    if (buttonState !== 'idle' || !salon) return;
     setPaymentError(null);
     setButtonState('loading');
 
@@ -345,7 +359,13 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
                 </a>
               )}
               <button
-                onClick={onClose}
+                onClick={() => {
+                  if (onViewAppointments) {
+                    onViewAppointments();
+                  } else {
+                    onClose();
+                  }
+                }}
                 className="w-full py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-nexora-pink transition-colors shadow-md text-[14px]"
               >
                 Done & View Appointments

@@ -13,6 +13,8 @@ interface SalonDetailModalProps {
   onAddReview?: (salonId: string, review: Review) => void;
   initialTab?: 'services' | 'gallery' | 'reviews' | 'about';
   userLocation?: string;
+  savedServiceIds?: string[];
+  onToggleSaveService?: (salonId: string, serviceId: string) => void;
 }
 
 type ModalTab = 'services' | 'gallery' | 'reviews' | 'about';
@@ -27,6 +29,8 @@ export const SalonDetailModal: React.FC<SalonDetailModalProps> = ({
   onAddReview,
   initialTab = 'services',
   userLocation = 'Vaishali Nagar, Jaipur',
+  savedServiceIds = [],
+  onToggleSaveService,
 }) => {
   const [activeTab, setActiveTab] = useState<ModalTab>(initialTab);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -520,12 +524,30 @@ export const SalonDetailModal: React.FC<SalonDetailModalProps> = ({
                             <span className="text-[11px] line-through text-on-surface-variant block">₹{srv.price}</span>
                           )}
                         </div>
-                        <button
-                          onClick={() => onBookService(salon, srv)}
-                          className="px-3 py-1 bg-primary text-white text-[12px] font-semibold rounded-lg hover:bg-nexora-pink transition-colors shadow-xs"
-                        >
-                          Book
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {onToggleSaveService && (
+                            <button
+                              type="button"
+                              onClick={() => onToggleSaveService(salon.id, srv.id)}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                                savedServiceIds.includes(srv.id)
+                                  ? 'bg-nexora-pink/10 text-nexora-pink'
+                                  : 'bg-surface-container text-on-surface-variant hover:text-nexora-pink'
+                              }`}
+                              title={savedServiceIds.includes(srv.id) ? 'Remove saved service' : 'Save service'}
+                            >
+                              <span className={`material-symbols-outlined text-[16px] ${savedServiceIds.includes(srv.id) ? 'fill-1' : ''}`}>
+                                bookmark
+                              </span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onBookService(salon, srv)}
+                            className="px-3 py-1 bg-primary text-white text-[12px] font-semibold rounded-lg hover:bg-nexora-pink transition-colors shadow-xs"
+                          >
+                            Book
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

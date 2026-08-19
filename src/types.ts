@@ -123,6 +123,11 @@ export interface AISalonRecommendation {
 
 export type ActiveTab = 'home' | 'explore' | 'appointments' | 'saved' | 'profile';
 
+export interface SavedServiceRef {
+  salonId: string;
+  serviceId: string;
+}
+
 export interface UserProfile {
   name: string;
   email: string;
