@@ -25,14 +25,87 @@ const STORAGE_KEYS = {
   user: 'nexora-user',
 };
 
-function loadJson<T>(key: string, fallback: T): T {
+/**
+ * Safely load JSON from localStorage.
+ * - Returns `fallback` for missing keys, corrupt JSON, `null`, or shapes that
+ *   the optional sanitizer rejects (returns `null` for) — e.g. stale data
+ *   written by an older app version. Bad keys are removed so the app
+ *   self-heals on next load instead of white-screening.
+ */
+function loadJson<T>(key: string, fallback: T, sanitize?: (value: unknown) => T | null): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || parsed === undefined) {
+      localStorage.removeItem(key);
+      return fallback;
+    }
+    if (sanitize) {
+      const clean = sanitize(parsed);
+      if (clean === null) {
+        localStorage.removeItem(key);
+        return fallback;
+      }
+      return clean;
+    }
+    return parsed as T;
   } catch {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* storage unavailable */
+    }
     return fallback;
   }
+}
+
+/** Persist JSON to localStorage without ever throwing (quota / denied storage). */
+function saveJson(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* storage unavailable or full — app keeps running, just not persisted */
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sanitizeUserProfile(value: unknown): UserProfile | null {
+  if (!isRecord(value) || typeof value.name !== 'string') return null;
+  return value as unknown as UserProfile;
+}
+
+function sanitizeSalonIds(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.filter((id): id is string => typeof id === 'string');
+}
+
+function sanitizeAppointments(value: unknown): Appointment[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.filter(isRecord).map((a) => ({
+    ...a,
+    id: typeof a.id === 'string' ? a.id : `apt-${Math.random().toString(36).slice(2, 10)}`,
+    salonId: typeof a.salonId === 'string' ? a.salonId : '',
+    salonName: typeof a.salonName === 'string' ? a.salonName : 'Salon',
+    services: Array.isArray(a.services) ? a.services : [],
+    status: ['confirmed', 'in_progress', 'completed', 'cancelled'].includes(a.status as string)
+      ? a.status
+      : 'confirmed',
+    date: typeof a.date === 'string' ? a.date : '',
+    time: typeof a.time === 'string' ? a.time : '',
+  })) as Appointment[];
+}
+
+function sanitizeSavedServices(value: unknown): SavedServiceRef[] | null {
+  if (!Array.isArray(value)) return null;
+  // Drop legacy/stale entries (older builds stored plain service-id strings).
+  return value.filter(
+    (item): item is SavedServiceRef =>
+      isRecord(item) && typeof item.salonId === 'string' && typeof item.serviceId === 'string'
+  );
 }
 
 function slotToIsoDate(slot?: { day?: string; date?: string; time?: string } | null): string {
@@ -83,20 +156,28 @@ function salonFromAppointment(appointment: Appointment): Salon {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
-  const [user, setUser] = useState<UserProfile>(() => loadJson(STORAGE_KEYS.user, INITIAL_USER));
+  const [user, setUser] = useState<UserProfile>(() => {
+    const stored = loadJson(STORAGE_KEYS.user, null as UserProfile | null, sanitizeUserProfile);
+    // Merge with defaults so fields added in newer versions never come back undefined.
+    return stored ? { ...INITIAL_USER, ...stored } : INITIAL_USER;
+  });
   const [currentLocation, setCurrentLocation] = useState<string>('Mansarovar, Jaipur');
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
   const [appointments, setAppointments] = useState<Appointment[]>(() =>
-    loadJson(STORAGE_KEYS.appointments, INITIAL_APPOINTMENTS)
+    loadJson(STORAGE_KEYS.appointments, INITIAL_APPOINTMENTS, sanitizeAppointments)
   );
   const [savedSalonIds, setSavedSalonIds] = useState<string[]>(() =>
-    loadJson(STORAGE_KEYS.savedSalons, ['salon-1', 'salon-2', 'salon-5'])
+    loadJson(STORAGE_KEYS.savedSalons, ['salon-1', 'salon-2', 'salon-5'], sanitizeSalonIds)
   );
   const [savedServices, setSavedServices] = useState<SavedServiceRef[]>(() =>
-    loadJson(STORAGE_KEYS.savedServices, [
-      { salonId: 'salon-1', serviceId: 'srv-101' },
-      { salonId: 'salon-2', serviceId: 'srv-201' },
-    ])
+    loadJson(
+      STORAGE_KEYS.savedServices,
+      [
+        { salonId: 'salon-1', serviceId: 'srv-101' },
+        { salonId: 'salon-2', serviceId: 'srv-201' },
+      ],
+      sanitizeSavedServices
+    )
   );
   
   // Dedicated Category & Service Screen
@@ -140,19 +221,19 @@ export default function App() {
   const upcomingAppointment = appointments.find((a) => a.status === 'confirmed') || null;
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.appointments, JSON.stringify(appointments));
+    saveJson(STORAGE_KEYS.appointments, appointments);
   }, [appointments]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.savedSalons, JSON.stringify(savedSalonIds));
+    saveJson(STORAGE_KEYS.savedSalons, savedSalonIds);
   }, [savedSalonIds]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.savedServices, JSON.stringify(savedServices));
+    saveJson(STORAGE_KEYS.savedServices, savedServices);
   }, [savedServices]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
+    saveJson(STORAGE_KEYS.user, user);
   }, [user]);
 
   // Handlers
