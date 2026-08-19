@@ -244,6 +244,8 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
     }
   };
 
+  if (!isOpen || !salon) return null;
+
   return (
     <div
       id="booking-summary-modal-backdrop"
