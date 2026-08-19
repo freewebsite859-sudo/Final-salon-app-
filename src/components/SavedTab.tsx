@@ -1,29 +1,37 @@
 import React, { useState } from 'react';
-import { Salon, SalonService, Stylist } from '../types';
+import { Salon, SalonService, Stylist, SavedServiceRef } from '../types';
 
 interface SavedTabProps {
   salons: Salon[];
   savedSalonIds: string[];
+  savedServices?: SavedServiceRef[];
   onOpenSalonDetails: (salon: Salon) => void;
   onBookSalon: (salon: Salon, service?: SalonService, stylist?: Stylist) => void;
   onToggleSaveSalon: (salonId: string) => void;
+  onToggleSaveService?: (salonId: string, serviceId: string) => void;
 }
 
 export const SavedTab: React.FC<SavedTabProps> = ({
   salons,
   savedSalonIds,
+  savedServices = [],
   onOpenSalonDetails,
   onBookSalon,
   onToggleSaveSalon,
+  onToggleSaveService,
 }) => {
   const [activeTab, setActiveTab] = useState<'salons' | 'services'>('salons');
 
   const savedSalons = salons.filter((s) => savedSalonIds.includes(s.id));
 
-  // Curated list of popular saved services across salons
-  const savedServices = salons.flatMap((s) =>
-    s.services.map((srv) => ({ ...srv, salon: s }))
-  ).slice(0, 5);
+  const savedServiceItems = savedServices
+    .map((ref) => {
+      const salon = salons.find((s) => s.id === ref.salonId);
+      const service = salon?.services.find((srv) => srv.id === ref.serviceId);
+      if (!salon || !service) return null;
+      return { ...service, salon };
+    })
+    .filter((item): item is SalonService & { salon: Salon } => item !== null);
 
   return (
     <div className="flex flex-col w-full pb-28 max-w-4xl mx-auto px-page-margin pt-3">
@@ -58,7 +66,7 @@ export const SavedTab: React.FC<SavedTabProps> = ({
           }`}
         >
           <span className="material-symbols-outlined text-[16px]">spa</span>
-          <span>Saved Services ({savedServices.length})</span>
+          <span>Saved Services ({savedServiceItems.length})</span>
         </button>
       </div>
 

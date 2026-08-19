@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ActiveTab, Salon, SalonService, Stylist, Appointment, UserProfile, Review } from './types';
+import React, { useEffect, useState } from 'react';
+import { ActiveTab, Salon, SalonService, Stylist, Appointment, UserProfile, Review, SavedServiceRef } from './types';
 import { INITIAL_SALONS, INITIAL_APPOINTMENTS, INITIAL_USER } from './data/mockSalons';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -18,13 +18,86 @@ import { ServiceCategoryScreen } from './components/ServiceCategoryScreen';
 import { ChooseProfessionalScreen } from './components/ChooseProfessionalScreen';
 import { BookingSummaryModal } from './components/BookingSummaryModal';
 
+const STORAGE_KEYS = {
+  appointments: 'nexora-appointments',
+  savedSalons: 'nexora-saved-salons',
+  savedServices: 'nexora-saved-services',
+  user: 'nexora-user',
+};
+
+function loadJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function slotToIsoDate(slot?: { day?: string; date?: string; time?: string } | null): string {
+  if (slot?.date && /^\d{4}-\d{2}-\d{2}$/.test(slot.date)) {
+    return slot.date;
+  }
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const dayLabel = (slot?.day || '').toLowerCase();
+  if (dayLabel === 'tomorrow') {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+  return todayStr;
+}
+
+function salonFromAppointment(appointment: Appointment): Salon {
+  return {
+    id: appointment.salonId,
+    name: appointment.salonName,
+    tagline: 'Premium salon and grooming studio in Jaipur.',
+    rating: 4.8,
+    reviewCount: 120,
+    image: appointment.salonImage,
+    gallery: [appointment.salonImage],
+    categories: ['Hair', 'Grooming'],
+    priceRange: '₹₹',
+    distance: '1.5 km',
+    isOpen: true,
+    openingHours: '10:00 AM - 8:00 PM',
+    gender: 'unisex',
+    reviews: [],
+    location: {
+      address: appointment.salonAddress,
+      area: appointment.salonAddress.split(',')[0] || 'Mansarovar',
+      city: 'Jaipur',
+      latitude: 26.85,
+      longitude: 75.78,
+      mapsUrl: appointment.mapsUrl,
+    },
+    phone: appointment.salonPhone || '+91 98290 12345',
+    amenities: ['AC', 'Wi-Fi', 'Card Payment', 'Parking'],
+    services: appointment.services,
+    stylists: appointment.stylist ? [appointment.stylist] : [],
+  };
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
-  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [user, setUser] = useState<UserProfile>(() => loadJson(STORAGE_KEYS.user, INITIAL_USER));
   const [currentLocation, setCurrentLocation] = useState<string>('Mansarovar, Jaipur');
   const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
-  const [savedSalonIds, setSavedSalonIds] = useState<string[]>(['salon-1', 'salon-2', 'salon-5']);
+  const [appointments, setAppointments] = useState<Appointment[]>(() =>
+    loadJson(STORAGE_KEYS.appointments, INITIAL_APPOINTMENTS)
+  );
+  const [savedSalonIds, setSavedSalonIds] = useState<string[]>(() =>
+    loadJson(STORAGE_KEYS.savedSalons, ['salon-1', 'salon-2', 'salon-5'])
+  );
+  const [savedServices, setSavedServices] = useState<SavedServiceRef[]>(() =>
+    loadJson(STORAGE_KEYS.savedServices, [
+      { salonId: 'salon-1', serviceId: 'srv-101' },
+      { salonId: 'salon-2', serviceId: 'srv-201' },
+    ])
+  );
   
   // Dedicated Category & Service Screen
   const [selectedCategoryScreen, setSelectedCategoryScreen] = useState<string | null>(null);
@@ -66,6 +139,22 @@ export default function App() {
   // Active upcoming appointment for reminder banner
   const upcomingAppointment = appointments.find((a) => a.status === 'confirmed') || null;
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.appointments, JSON.stringify(appointments));
+  }, [appointments]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedSalons, JSON.stringify(savedSalonIds));
+  }, [savedSalonIds]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedServices, JSON.stringify(savedServices));
+  }, [savedServices]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
+  }, [user]);
+
   // Handlers
   const handleOpenSalonDetails = (salon: Salon) => {
     setSelectedSalonForDetail(salon);
@@ -86,33 +175,7 @@ export default function App() {
   };
 
   const handleBookAgain = (appointment: Appointment) => {
-    let salon = salons.find((s) => s.id === appointment.salonId);
-    if (!salon) {
-      salon = {
-        id: appointment.salonId,
-        name: appointment.salonName,
-        rating: 4.8,
-        reviewCount: 120,
-        image: appointment.salonImage,
-        categories: ['Hair', 'Grooming'],
-        priceRange: '₹₹',
-        distance: '1.5 km',
-        isOpen: true,
-        openingHours: '10:00 AM - 8:00 PM',
-        location: {
-          address: appointment.salonAddress,
-          area: appointment.salonAddress.split(',')[0] || 'Mansarovar',
-          city: 'Jaipur',
-          coordinates: { lat: 26.85, lng: 75.78 },
-          mapsUrl: appointment.mapsUrl,
-        },
-        phone: appointment.salonPhone || '+91 98290 12345',
-        about: 'Premium salon and grooming studio in Jaipur.',
-        amenities: ['AC', 'Wi-Fi', 'Card Payment', 'Parking'],
-        services: appointment.services,
-        stylists: appointment.stylist ? [appointment.stylist] : [],
-      };
-    }
+    const salon = salons.find((s) => s.id === appointment.salonId) || salonFromAppointment(appointment);
     handleOpenBooking(
       salon,
       appointment.services[0],
@@ -122,15 +185,32 @@ export default function App() {
   };
 
   const handleConfirmBooking = (newAppointment: Appointment) => {
-    setAppointments([newAppointment, ...appointments]);
+    setAppointments((prev) => [newAppointment, ...prev.filter((a) => a.id !== newAppointment.id)]);
+  };
+
+  const handleViewAppointments = () => {
+    setIsBookingModalOpen(false);
+    setIsBookingSummaryModalOpen(false);
+    setIsQuickNearestModalOpen(false);
+    setChooseProfessionalData(null);
+    setSelectedCategoryScreen(null);
+    setActiveTab('appointments');
   };
 
   const handleToggleSaveSalon = (salonId: string) => {
-    if (savedSalonIds.includes(salonId)) {
-      setSavedSalonIds(savedSalonIds.filter((id) => id !== salonId));
-    } else {
-      setSavedSalonIds([...savedSalonIds, salonId]);
-    }
+    setSavedSalonIds((prev) =>
+      prev.includes(salonId) ? prev.filter((id) => id !== salonId) : [...prev, salonId]
+    );
+  };
+
+  const handleToggleSaveService = (salonId: string, serviceId: string) => {
+    setSavedServices((prev) => {
+      const exists = prev.some((item) => item.salonId === salonId && item.serviceId === serviceId);
+      if (exists) {
+        return prev.filter((item) => !(item.salonId === salonId && item.serviceId === serviceId));
+      }
+      return [...prev, { salonId, serviceId }];
+    });
   };
 
   const handleSearchSubmit = (query: string) => {
@@ -222,7 +302,7 @@ export default function App() {
               salon: targetSalon,
               services: finalServices,
               stylist: stylist || null,
-              date: selectedSlot?.date || new Date().toISOString().split('T')[0],
+              date: slotToIsoDate(selectedSlot),
               time: selectedSlot?.time || '2:30 PM',
               notes: '',
             });
@@ -277,7 +357,7 @@ export default function App() {
                 salons={salons}
                 upcomingAppointment={upcomingAppointment}
                 savedSalonIds={savedSalonIds}
-                savedServicesCount={5}
+                savedServicesCount={savedServices.length}
                 onOpenSalonDetails={handleOpenSalonDetails}
                 onBookSalon={handleOpenBooking}
                 onOpenAppointmentDetails={(apt) => {
@@ -322,9 +402,11 @@ export default function App() {
               <SavedTab
                 salons={salons}
                 savedSalonIds={savedSalonIds}
+                savedServices={savedServices}
                 onOpenSalonDetails={handleOpenSalonDetails}
                 onBookSalon={handleOpenBooking}
                 onToggleSaveSalon={handleToggleSaveSalon}
+                onToggleSaveService={handleToggleSaveService}
               />
             )}
 
@@ -365,6 +447,7 @@ export default function App() {
         initialServices={selectedServicesForBooking}
         initialStylist={selectedStylistForBooking}
         onConfirmBooking={handleConfirmBooking}
+        onViewAppointments={handleViewAppointments}
         onOpenSummary={(draft) => {
           setIsBookingModalOpen(false);
           setBookingSummaryDraft(draft);
@@ -382,6 +465,7 @@ export default function App() {
         time={bookingSummaryDraft?.time || '2:30 PM'}
         specialNotes={bookingSummaryDraft?.notes || ''}
         onConfirmBooking={handleConfirmBooking}
+        onViewAppointments={handleViewAppointments}
         onUpdateServices={(updatedServices) => {
           if (bookingSummaryDraft) {
             setBookingSummaryDraft({
@@ -440,6 +524,12 @@ export default function App() {
         isSaved={selectedSalonForDetail ? savedSalonIds.includes(selectedSalonForDetail.id) : false}
         onToggleSave={handleToggleSaveSalon}
         onAddReview={handleAddReview}
+        savedServiceIds={
+          selectedSalonForDetail
+            ? savedServices.filter((s) => s.salonId === selectedSalonForDetail.id).map((s) => s.serviceId)
+            : []
+        }
+        onToggleSaveService={handleToggleSaveService}
         onBookService={(salon, srv, st) => {
           setIsSalonDetailModalOpen(false);
           handleOpenBooking(salon, srv, st);
@@ -459,6 +549,7 @@ export default function App() {
         salons={salons}
         currentLocation={currentLocation}
         onConfirmBooking={handleConfirmBooking}
+        onViewAppointments={handleViewAppointments}
       />
 
       <NotificationsModal

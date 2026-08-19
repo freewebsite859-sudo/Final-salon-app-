@@ -413,6 +413,27 @@ export const ServiceCategoryScreen: React.FC<ServiceCategoryScreenProps> = ({
               })}
             </div>
 
+            {selectedServices.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {selectedServices.map((srv) => (
+                  <span
+                    key={srv.id}
+                    className="inline-flex items-center gap-1.5 bg-nexora-pink/10 text-nexora-pink border border-nexora-pink/30 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
+                  >
+                    {srv.name}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleService(srv.id)}
+                      className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-nexora-pink/20"
+                      title={`Remove ${srv.name}`}
+                    >
+                      <span className="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Service Cards List */}
             <div className="flex flex-col gap-3">
               {DEFAULT_SERVICES.filter(

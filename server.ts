@@ -178,7 +178,7 @@ Give an expert recommendation on which treatment/haircut fits best, and mention 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, allowedHosts: true, host: "0.0.0.0" },
       appType: "spa",
     });
     app.use(vite.middlewares);

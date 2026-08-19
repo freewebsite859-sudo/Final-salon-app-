@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Salon, SalonService, Appointment } from '../types';
 
 interface QuickNearestModalProps {
@@ -7,6 +7,7 @@ interface QuickNearestModalProps {
   salons: Salon[];
   currentLocation: string;
   onConfirmBooking: (appointment: Appointment) => void;
+  onViewAppointments?: () => void;
 }
 
 export const QuickNearestModal: React.FC<QuickNearestModalProps> = ({
@@ -15,13 +16,21 @@ export const QuickNearestModal: React.FC<QuickNearestModalProps> = ({
   salons,
   currentLocation,
   onConfirmBooking,
+  onViewAppointments,
 }) => {
-  if (!isOpen) return null;
-
   const nearestSalon = salons[0] || null;
   const [selectedServiceType, setSelectedServiceType] = useState<'haircut' | 'beard' | 'facial' | 'blowdry'>('haircut');
   const [selectedSlot, setSelectedSlot] = useState<string>('In 15 mins (Ready)');
   const [isBooked, setIsBooked] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedServiceType('haircut');
+    setSelectedSlot('In 15 mins (Ready)');
+    setIsBooked(false);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const quickServices = [
     { id: 'haircut', name: 'Express Haircut & Style', price: 349, duration: '30 mins', icon: 'content_cut' },
@@ -107,10 +116,16 @@ export const QuickNearestModal: React.FC<QuickNearestModalProps> = ({
               Head over to <strong className="text-on-surface">{nearestSalon?.name}</strong> ({nearestSalon?.distance}). The stylist is ready for your arrival.
             </p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (onViewAppointments) {
+                  onViewAppointments();
+                } else {
+                  onClose();
+                }
+              }}
               className="w-full py-3 bg-primary text-white font-button-text rounded-xl"
             >
-              Done & Track on Map
+              Done & View Appointments
             </button>
           </div>
         ) : (
