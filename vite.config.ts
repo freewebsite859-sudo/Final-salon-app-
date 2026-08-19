@@ -14,11 +14,23 @@ export default defineConfig(() => {
     server: {
       host: '0.0.0.0',
       allowedHosts: true as const,
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // ALWAYS keep HMR + file watching enabled.
+      //
+      // Previously, when the DISABLE_HMR env var was set (as AI Studio does
+      // during agent edits), `watch: null` disabled Vite's file watching
+      // entirely. The dev server then kept serving a stale, cached copy of
+      // the code: edits never appeared in the preview, not even after a
+      // manual refresh, until a full server restart.
+      //
+      // With watching + HMR always on, every saved edit is picked up
+      // instantly and hot-reloaded into the page.
+      hmr: true,
+      watch: {
+        // Poll for changes so edits are reliably detected in cloud/container
+        // filesystems where native inotify events can be missed.
+        usePolling: true,
+        interval: 300,
+      },
     },
   };
 });
